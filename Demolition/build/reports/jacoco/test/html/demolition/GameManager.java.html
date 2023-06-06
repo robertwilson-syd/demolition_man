@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GameManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Demolition</a> &gt; <a href="index.source.html" class="el_package">demolition</a> &gt; <span class="el_source">GameManager.java</span></div><h1>GameManager.java</h1><pre class="source lang-java linenums">package demolition;
+
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Random;
+import processing.data.JSONObject;
+import processing.data.JSONArray;
+
+public class GameManager{
+	private Map map;
+
+	private BomberMan bomberMan;
+
+<span class="fc" id="L17">	private boolean inputBuffer = false;</span>
+<span class="fc" id="L18">	private boolean spaceBarReleased = true;</span>
+<span class="fc" id="L19">	private boolean levelSetup = false;</span>
+
+<span class="fc" id="L21">	private List&lt;Bomb&gt; bombList = new ArrayList&lt;Bomb&gt;();</span>
+
+<span class="fc" id="L23">	private List&lt;Explosion&gt; explosions = new ArrayList&lt;Explosion&gt;();</span>
+
+	private PImage[] bombAnimation;
+	private PImage[] explosionSprites;
+
+<span class="fc" id="L28">	private int enemyMovementTimer = 60;</span>
+<span class="fc" id="L29">	private int currentLevel = 0;</span>
+	private int currentLevelTime;
+<span class="fc" id="L31">	private Random randInt = new Random();</span>
+
+	private JSONArray levels;
+	
+	private JSONObject currentLevelConfig;
+
+	private String currentLevelPath;
+
+	private UI ui;
+
+<span class="fc" id="L41">	public GameManager(Map map, UI ui, JSONArray levels) {</span>
+<span class="fc" id="L42">        this.map = map;</span>
+<span class="fc" id="L43">		this.ui = ui;</span>
+<span class="fc" id="L44">		this.levels = levels;</span>
+<span class="fc" id="L45">	}</span>
+
+	public Map getMap(){
+<span class="nc" id="L48">		return map;</span>
+	}
+
+	public void tick(int playerDirection, boolean keyPressed){
+		//The tick function ticks for all the animated Objects (player, enemies, bombs, explosions)
+<span class="fc bfc" id="L53" title="All 2 branches covered.">		if(!levelSetup){</span>
+			//Run once for each level to load in the map
+<span class="fc" id="L55">			setupLevel();</span>
+<span class="fc" id="L56">			levelSetup = true;</span>
+		}
+<span class="fc" id="L58">		bomberMan = this.map.getBomberMan();</span>
+		
+		//This deals with user input. If the player presses space, it ensures only one bomb is created
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if(!keyPressed){</span>
+<span class="fc" id="L62">			inputBuffer = false;</span>
+		}
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if(playerDirection != 32){</span>
+<span class="fc" id="L65">			spaceBarReleased = true;</span>
+		}
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">		if(playerDirection == 32 &amp;&amp; spaceBarReleased){</span>
+<span class="fc" id="L68">			spaceBarReleased = false;</span>
+<span class="fc" id="L69">			createBomb(bomberMan.getX(), bomberMan.getY());</span>
+		}
+		//Then only the arrow keys are accepted as input into the move function for the player character
+<span class="pc bpc" id="L72" title="3 of 8 branches missed.">		else if(keyPressed &amp;&amp; !inputBuffer &amp;&amp; playerDirection &lt; 41 &amp;&amp; playerDirection &gt; 36){</span>
+<span class="fc" id="L73">			int[] temp = move(bomberMan.getX(), bomberMan.getY(), playerDirection - 37);</span>
+<span class="fc" id="L74">			bomberMan.adjustX(temp[0]);</span>
+<span class="fc" id="L75">			bomberMan.adjustY(temp[1]);</span>
+<span class="fc" id="L76">			inputBuffer = true;</span>
+<span class="fc" id="L77">			bomberMan.changeDirection(playerDirection - 37);</span>
+		}
+
+<span class="fc" id="L80">		bomberMan.tick();</span>
+
+		//This for loop calls the tick function for each bomb once, and checks if any of them have finished their animation cycle.
+		//If any of them have, the bomb is removed and an explosion is created in its place.
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		for(Iterator&lt;Bomb&gt; it = bombList.iterator(); it.hasNext();){</span>
+<span class="fc" id="L85">			Bomb bomb = it.next();</span>
+<span class="fc" id="L86">			bomb.tick();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if(bomb.getIsExploded()){</span>
+<span class="fc" id="L88">				createExplosion(bomb.getX(), bomb.getY());</span>
+<span class="fc" id="L89">				it.remove();</span>
+			}
+<span class="fc" id="L91">		}</span>
+
+<span class="fc" id="L93">		collision();</span>
+		//This calls the tick function for each explosion once, after half a second each explosion is removed.
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		for(Iterator&lt;Explosion&gt; it = explosions.iterator(); it.hasNext();){</span>
+<span class="fc" id="L96">			Explosion explosion = it.next();</span>
+<span class="fc" id="L97">			explosion.tick();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			if(explosion.getExplosionEnded()){</span>
+<span class="nc" id="L99">				it.remove();</span>
+			}
+<span class="fc" id="L101">		}</span>
+		
+		//This loop calls the tick function for each red enemy once, which animates their sprite.
+		//It also dictates the red enemy movement logic.
+<span class="fc" id="L105">		ArrayList&lt;RedEnemy&gt; redEnemiesCopy = new ArrayList&lt;RedEnemy&gt;(this.map.getRedEnemies());</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		for(RedEnemy redEnemy : redEnemiesCopy){</span>
+<span class="fc" id="L107">			int[] temp = new int[2];</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">			if(enemyMovementTimer == 0){</span>
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">				while(temp[0] == 0 &amp;&amp; temp[1] == 0){</span>
+<span class="fc" id="L110">					temp = move(redEnemy.getX(), redEnemy.getY(), redEnemy.getDirection());</span>
+<span class="pc bpc" id="L111" title="1 of 4 branches missed.">					if(temp[0] == 0 &amp;&amp; temp[1] == 0){</span>
+<span class="fc" id="L112">						redEnemy.changeDirection(randInt.nextInt(4));</span>
+					}
+				}
+<span class="fc" id="L115">				redEnemy.adjustX(temp[0]);</span>
+<span class="fc" id="L116">				redEnemy.adjustY(temp[1]);</span>
+			}
+<span class="pc bpc" id="L118" title="1 of 4 branches missed.">			if(redEnemy.getX() == bomberMan.getX() &amp;&amp; redEnemy.getY() == bomberMan.getY()){</span>
+<span class="fc" id="L119">				resetMap();</span>
+			}
+<span class="fc" id="L121">			redEnemy.tick();</span>
+<span class="fc" id="L122">		}</span>
+<span class="fc" id="L123">		redEnemiesCopy.clear();</span>
+		
+		//This loop calls the tick function for each yellow enemy once, which animates their sprite.
+		//It also dictates the yellow enemy movement logic.
+<span class="fc" id="L127">		ArrayList&lt;YellowEnemy&gt; yellowEnemiesCopy = new ArrayList&lt;YellowEnemy&gt;(this.map.getYellowEnemies());</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		for(YellowEnemy yellowEnemy: yellowEnemiesCopy){</span>
+<span class="fc" id="L129">			int[] temp = new int[2];</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			if(enemyMovementTimer == 0){</span>
+				
+<span class="pc bpc" id="L132" title="1 of 4 branches missed.">				while(temp[0] == 0 &amp;&amp; temp[1] == 0){</span>
+<span class="fc" id="L133">					temp = move(yellowEnemy.getX(), yellowEnemy.getY(), yellowEnemy.getDirection());</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">					if(temp[0] == 0 &amp;&amp; temp[1] == 0){</span>
+						int newDirection;
+<span class="nc bnc" id="L136" title="All 2 branches missed.">						if(yellowEnemy.getDirection() == 3){</span>
+<span class="nc" id="L137">							newDirection = 0;</span>
+						}else{
+<span class="nc" id="L139">							newDirection = yellowEnemy.getDirection() + 1; </span>
+						}
+<span class="nc" id="L141">						yellowEnemy.changeDirection(newDirection);</span>
+<span class="nc" id="L142">					}</span>
+				}
+
+<span class="fc" id="L145">				yellowEnemy.adjustX(temp[0]);</span>
+<span class="fc" id="L146">				yellowEnemy.adjustY(temp[1]);</span>
+			}
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">			if(yellowEnemy.getX() == bomberMan.getX() &amp;&amp; yellowEnemy.getY() == bomberMan.getY()){</span>
+<span class="fc" id="L149">				resetMap();</span>
+			}
+<span class="fc" id="L151">			yellowEnemy.tick();</span>
+<span class="fc" id="L152">		}</span>
+<span class="fc" id="L153">		yellowEnemiesCopy.clear();</span>
+
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if(enemyMovementTimer == 0){</span>
+<span class="fc" id="L156">			enemyMovementTimer = 60;</span>
+		}
+<span class="fc" id="L158">		enemyMovementTimer--;</span>
+
+<span class="fc" id="L160">		ui.tick();</span>
+
+<span class="fc bfc" id="L162" title="All 4 branches covered.">		if(bomberMan.getX() == map.getGoal().getX() &amp;&amp; bomberMan.getY() == map.getGoal().getY()){</span>
+<span class="fc" id="L163">			levelWin();</span>
+		}
+			
+<span class="fc" id="L166">	}</span>
+
+
+	public int[] move(int initX, int initY, int direction){
+		//The move function accepts the coordinates of the character to be moved, and the direction they are trying to go.
+		//It checks that the destination is passable, and if so it returns a value to adjust the character's coordinates.
+		//Otherwise, it does nothing.
+<span class="fc" id="L173">		int[] out = new int[2];</span>
+<span class="pc bpc" id="L174" title="1 of 5 branches missed.">		switch(direction){</span>
+			case 0:
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				if(map.isDestinationPassable(initX - 32, initY)){</span>
+<span class="fc" id="L177">					out[0] = -32;</span>
+				}
+				break;
+			case 1:
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				if(map.isDestinationPassable(initX, initY - 32)){</span>
+<span class="nc" id="L182">					out[1] = -32;</span>
+				}
+				break;
+			case 2:
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				if(map.isDestinationPassable(initX + 32, initY)){</span>
+<span class="fc" id="L187">					out[0] = 32;</span>
+				}
+				break;
+			case 3:
+<span class="fc bfc" id="L191" title="All 2 branches covered.">				if(map.isDestinationPassable(initX, initY + 32)){</span>
+<span class="fc" id="L192">					out[1] = 32;</span>
+				}
+				break;
+			default:
+				break;
+		}
+<span class="fc" id="L198">		return out;</span>
+	}
+
+	public void setBombAnimation(PImage[] bombAnimation){
+<span class="fc" id="L202">		this.bombAnimation = bombAnimation;</span>
+<span class="fc" id="L203">	}</span>
+
+	public void setExplosionSprites(PImage[] explosionSprites){
+<span class="fc" id="L206">		this.explosionSprites = explosionSprites;</span>
+<span class="fc" id="L207">	}</span>
+
+	public void createBomb(int x, int y){
+		//Checks that there is no bomb already at the given coordinates and if there is not, then a bomb is created.
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		for(Bomb bomb : bombList){</span>
+<span class="nc bnc" id="L212" title="All 4 branches missed.">			if(bomb.getX() == x &amp;&amp; bomb.getY() == y){</span>
+<span class="nc" id="L213">				return;</span>
+			}
+<span class="nc" id="L215">		}</span>
+<span class="fc" id="L216">		Bomb tempBomb = new Bomb(x, y, bombAnimation);</span>
+<span class="fc" id="L217">		bombList.add(tempBomb);</span>
+<span class="fc" id="L218">	}</span>
+
+	public List&lt;Bomb&gt; getBombList(){
+<span class="fc" id="L221">		return bombList;</span>
+	}
+
+	public List&lt;Explosion&gt; getExplosions(){
+<span class="fc" id="L225">		return explosions;</span>
+	}
+
+	public void createExplosion(int x, int y){
+		/*Creates a centre explosion at the given coordinates (no validation is required for the centre explosion as that is already checked when a bomb is created).
+		It then checks each cardinal direction: 
+		If the first tile is empty, an explosion is created and the second tile in that direction is checked.
+		If the second tile is empty, an explosion is created.
+		If the second tile is a broken wall the broken wall is destroyed and an explosion is created.
+		If the second tile is a wall nothing happens.
+		If the first tile is a broken wall, the broken wall is destroyed and an explosion is created, but the second tile in that direction is not checked.
+		If the first tile is a wall do nothing in that direction.*/
+<span class="fc" id="L237">		Explosion centreExplosion = new Explosion(x, y, explosionSprites[0]);</span>
+<span class="fc" id="L238">		explosions.add(centreExplosion);</span>
+
+<span class="pc bpc" id="L240" title="1 of 4 branches missed.">		if(map.isDestinationPassable(x - 32, y) || map.isDestinationBrokenWall(x - 32, y)){</span>
+<span class="fc" id="L241">			Explosion firstLeftExplosion = new Explosion(x - 32, y, explosionSprites[1]);</span>
+<span class="fc" id="L242">			explosions.add(firstLeftExplosion);</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">			if(map.isDestinationBrokenWall(x - 32, y)){</span>
+<span class="nc" id="L244">				map.breakWall(x - 32, y);</span>
+			}
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">			else if(map.isDestinationPassable(x - 64, y)){</span>
+<span class="nc" id="L247">				Explosion secondLeftExplosion = new Explosion(x - 64, y, explosionSprites[1]);</span>
+<span class="nc" id="L248">				explosions.add(secondLeftExplosion);</span>
+<span class="nc" id="L249">				map.breakWall(x - 64, y);</span>
+			}
+		}
+
+<span class="pc bpc" id="L253" title="3 of 4 branches missed.">		if(map.isDestinationPassable(x + 32, y) || map.isDestinationBrokenWall(x + 32, y)){</span>
+<span class="fc" id="L254">			Explosion firstRightExplosion = new Explosion(x + 32, y, explosionSprites[1]);</span>
+<span class="fc" id="L255">			explosions.add(firstRightExplosion);</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">			if(map.isDestinationBrokenWall(x + 32, y)){</span>
+<span class="nc" id="L257">				map.breakWall(x + 32, y);</span>
+<span class="pc bpc" id="L258" title="1 of 4 branches missed.">			}else if(map.isDestinationPassable(x + 64, y) || map.isDestinationBrokenWall(x + 64, y)){</span>
+<span class="fc" id="L259">				Explosion secondRightExplosion = new Explosion(x + 64, y, explosionSprites[1]);</span>
+<span class="fc" id="L260">				explosions.add(secondRightExplosion);</span>
+<span class="fc" id="L261">				map.breakWall(x + 64, y);</span>
+			}
+		}
+
+<span class="pc bpc" id="L265" title="1 of 4 branches missed.">		if(map.isDestinationPassable(x, y - 32) || map.isDestinationBrokenWall(x, y - 32)){</span>
+<span class="fc" id="L266">			Explosion firstUpExplosion = new Explosion(x, y - 32, explosionSprites[2]);</span>
+<span class="fc" id="L267">			explosions.add(firstUpExplosion);</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">			if(map.isDestinationBrokenWall(x, y - 32)){</span>
+<span class="fc" id="L269">				map.breakWall(x, y - 32);</span>
+<span class="nc bnc" id="L270" title="All 4 branches missed.">			}else if(map.isDestinationPassable(x, y - 64) || map.isDestinationBrokenWall(x, y - 64)){</span>
+<span class="nc" id="L271">				Explosion secondUpExplosion = new Explosion(x, y - 64, explosionSprites[2]);</span>
+<span class="nc" id="L272">				explosions.add(secondUpExplosion);</span>
+<span class="nc" id="L273">				map.breakWall(x, y - 64);</span>
+			}
+		}
+
+<span class="pc bpc" id="L277" title="3 of 4 branches missed.">		if(map.isDestinationPassable(x, y + 32) || map.isDestinationBrokenWall(x, y + 32)){</span>
+<span class="fc" id="L278">			Explosion firstDownExplosion = new Explosion(x, y + 32, explosionSprites[2]);</span>
+<span class="fc" id="L279">			explosions.add(firstDownExplosion);</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">			if(map.isDestinationBrokenWall(x, y + 32)){</span>
+<span class="nc" id="L281">				map.breakWall(x, y + 32);</span>
+<span class="pc bpc" id="L282" title="1 of 4 branches missed.">			}else if(map.isDestinationPassable(x, y + 64) || map.isDestinationBrokenWall(x, y + 64)){</span>
+<span class="fc" id="L283">				Explosion secondDownExplosion = new Explosion(x, y + 64, explosionSprites[2]);</span>
+<span class="fc" id="L284">				explosions.add(secondDownExplosion);</span>
+<span class="fc" id="L285">				map.breakWall(x, y + 64);</span>
+			}
+		}
+<span class="fc" id="L288">	}</span>
+
+	public void collision(){
+		//This checks for character collisions with explosions, if the character is an enemy the enemy is removed. 
+		//If the character is the player the level is reset and a life is lost.
+<span class="fc" id="L293">		ArrayList&lt;Explosion&gt; explosionsCopy = new ArrayList&lt;Explosion&gt;(explosions);</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">		for(Explosion explosion : explosionsCopy){</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">			for(Iterator&lt;RedEnemy&gt; it = this.map.getRedEnemies().iterator(); it.hasNext();){</span>
+<span class="fc" id="L296">				RedEnemy redEnemy = it.next();</span>
+<span class="pc bpc" id="L297" title="1 of 4 branches missed.">				if(explosion.getX() == redEnemy.getX() &amp;&amp; explosion.getY() == redEnemy.getY()){</span>
+<span class="nc" id="L298">					it.remove();</span>
+				}
+<span class="fc" id="L300">			}</span>
+
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			for(Iterator&lt;YellowEnemy&gt; it = this.map.getYellowEnemies().iterator(); it.hasNext();){</span>
+<span class="fc" id="L303">				YellowEnemy yellowEnemy = it.next();</span>
+<span class="pc bpc" id="L304" title="3 of 4 branches missed.">				if(explosion.getX() == yellowEnemy.getX() &amp;&amp; explosion.getY() == yellowEnemy.getY()){</span>
+<span class="nc" id="L305">					it.remove();</span>
+				}
+<span class="fc" id="L307">			}</span>
+			
+<span class="pc bpc" id="L309" title="1 of 4 branches missed.">			if(explosion.getX() == bomberMan.getX() &amp;&amp; explosion.getY() == bomberMan.getY()){</span>
+<span class="fc" id="L310">				resetMap();</span>
+<span class="fc" id="L311">				break;</span>
+			}
+<span class="fc" id="L313">		}</span>
+<span class="fc" id="L314">	}</span>
+
+	public void resetMap(){
+<span class="fc" id="L317">		this.map.loadMap(currentLevelPath);</span>
+<span class="fc" id="L318">		explosions.clear();</span>
+<span class="fc" id="L319">		bombList.clear();</span>
+<span class="fc" id="L320">		ui.loseLife();</span>
+<span class="fc" id="L321">	}</span>
+	
+	public UI getUI(){
+<span class="fc" id="L324">		return ui;</span>
+	}
+
+	public void setupLevel(){
+<span class="fc" id="L328">		currentLevelConfig = levels.getJSONObject(currentLevel);</span>
+<span class="fc" id="L329">		currentLevelPath = currentLevelConfig.getString(&quot;path&quot;);</span>
+<span class="fc" id="L330">		currentLevelTime = currentLevelConfig.getInt(&quot;time&quot;); </span>
+<span class="fc" id="L331">		this.map.loadMap(currentLevelPath);</span>
+<span class="fc" id="L332">		this.ui.setLevelTime(currentLevelTime);</span>
+<span class="fc" id="L333">	}</span>
+
+	public void levelWin(){
+<span class="fc" id="L336">		currentLevel++;</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">		if(currentLevel &gt;= levels.size()){</span>
+<span class="fc" id="L338">			gameWin();</span>
+		}
+<span class="fc" id="L340">		levelSetup = false;</span>
+<span class="fc" id="L341">	}</span>
+
+	public void gameWin(){
+<span class="fc" id="L344">		this.ui.setGameOver(true);</span>
+<span class="fc" id="L345">		this.ui.setGameFinishMessage(&quot;YOU WIN&quot;);</span>
+<span class="fc" id="L346">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

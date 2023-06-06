@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="demolition.MovementTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-11-07T12:19:42" hostname="DESKTOP-NLUMMOC" time="1.098">
+  <properties/>
+  <testcase name="basicTest()" classname="demolition.MovementTest" time="1.098"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

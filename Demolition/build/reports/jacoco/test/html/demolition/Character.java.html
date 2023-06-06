@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Character.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Demolition</a> &gt; <a href="index.source.html" class="el_package">demolition</a> &gt; <span class="el_source">Character.java</span></div><h1>Character.java</h1><pre class="source lang-java linenums">package demolition;
+
+import processing.core.PApplet;
+import processing.core.PImage;
+
+public class Character extends Tile{
+
+<span class="fc" id="L8">	private PImage[][] animations = new PImage[4][4];</span>
+	
+<span class="fc" id="L10">	private int buffer = 0;</span>
+<span class="fc" id="L11">	private int animationStep = 0;</span>
+<span class="fc" id="L12">	private int direction = 3;</span>
+
+	public Character(int x, int y, PImage[][] animations){
+<span class="fc" id="L15">		super(x, y, animations[3][0]);</span>
+<span class="fc" id="L16">		this.animations = animations;</span>
+<span class="fc" id="L17">	}</span>
+
+	public void tick(){
+		//The sprite animation is handled by this tick function, while movement is handled by the GameManager class
+<span class="fc bfc" id="L21" title="All 2 branches covered.">		if(buffer == 0){</span>
+<span class="fc" id="L22">			animationStep++;</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">			if(animationStep &gt; 3){</span>
+<span class="fc" id="L24">				animationStep = 0;</span>
+			}
+<span class="fc" id="L26">			buffer = 12;</span>
+		}else{
+<span class="fc" id="L28">			buffer--;</span>
+		}
+		
+<span class="fc" id="L31">		this.sprite = animations[direction][animationStep];</span>
+<span class="fc" id="L32">	}</span>
+
+	public void display(PApplet app){
+		//Needs to offset the sprite as it is 16 pixels larger than the tiles.
+<span class="fc" id="L36">		app.image(this.sprite, this.x, this.y - 16);</span>
+<span class="fc" id="L37">	}</span>
+
+	public void changeDirection(int direction){
+<span class="fc" id="L40">		this.direction = direction;</span>
+<span class="fc" id="L41">		return;</span>
+	}
+
+	public int getDirection(){
+<span class="fc" id="L45">		return direction;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

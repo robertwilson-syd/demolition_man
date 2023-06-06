@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>App.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Demolition</a> &gt; <a href="index.source.html" class="el_package">demolition</a> &gt; <span class="el_source">App.java</span></div><h1>App.java</h1><pre class="source lang-java linenums">package demolition;
+
+import processing.core.PApplet;
+import processing.core.PImage;
+import processing.core.PFont;
+import processing.data.JSONObject;
+import processing.data.JSONArray;
+import java.util.concurrent.TimeUnit;
+
+public class App extends PApplet {
+
+    public static final int WIDTH = 480;
+    public static final int HEIGHT = 480;
+    public static final int FPS = 60;
+    private int playerDirection;
+    private int lives;
+    public Map map;
+
+    public GameManager gameManager;
+
+    private PImage wall;
+	private PImage brokenWall;
+	private PImage goalImage;
+
+<span class="fc" id="L25">    public PImage[][] playerAnimations = new PImage[4][4];</span>
+<span class="fc" id="L26">    public PImage[][] redEnemyAnimations = new PImage[4][4];</span>
+<span class="fc" id="L27">    public PImage[][] yellowEnemyAnimations = new PImage[4][4];</span>
+
+<span class="fc" id="L29">    public PImage[] bombAnimation = new PImage[8];</span>
+<span class="fc" id="L30">    public PImage[] explosionSprites = new PImage[3];</span>
+
+    private UI ui;
+    
+<span class="fc" id="L34">    private String configPath = &quot;config.json&quot;;</span>
+
+    private JSONObject config;
+
+    private JSONArray levels;
+
+<span class="fc" id="L40">    public App() {</span>
+<span class="fc" id="L41">    }</span>
+
+    public void settings() {
+<span class="fc" id="L44">        size(WIDTH, HEIGHT);</span>
+<span class="fc" id="L45">    }</span>
+
+    public void setConfig(String path){
+<span class="fc" id="L48">        this.configPath = path;</span>
+<span class="fc" id="L49">    }</span>
+
+    public void setup() {
+<span class="fc" id="L52">        frameRate(FPS);</span>
+
+        // Load images during setup
+<span class="fc" id="L55">        config = loadJSONObject(configPath);</span>
+<span class="fc" id="L56">        lives = config.getInt(&quot;lives&quot;);</span>
+<span class="fc" id="L57">        levels = config.getJSONArray(&quot;levels&quot;);</span>
+
+<span class="fc" id="L59">        wall = this.loadImage(&quot;src/main/resources/wall/solid.png&quot;);</span>
+<span class="fc" id="L60">        brokenWall = this.loadImage(&quot;src/main/resources/broken/broken.png&quot;);</span>
+<span class="fc" id="L61">        goalImage = this.loadImage(&quot;src/main/resources/goal/goal.png&quot;);</span>
+<span class="fc" id="L62">        playerAnimations = loadCharacterAnimations(&quot;player&quot;);</span>
+<span class="fc" id="L63">        redEnemyAnimations = loadCharacterAnimations(&quot;red_enemy&quot;);</span>
+<span class="fc" id="L64">        yellowEnemyAnimations = loadCharacterAnimations(&quot;yellow_enemy&quot;);</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for(int i = 0; i &lt; bombAnimation.length; i++){</span>
+<span class="fc" id="L67">            bombAnimation[i] = this.loadImage(&quot;src/main/resources/bomb/bomb&quot; + (i + 1) + &quot;.png&quot;);</span>
+        }
+
+<span class="fc" id="L70">        explosionSprites[0] = this.loadImage(&quot;src/main/resources/explosion/centre.png&quot;);</span>
+<span class="fc" id="L71">        explosionSprites[1] = this.loadImage(&quot;src/main/resources/explosion/horizontal.png&quot;);</span>
+<span class="fc" id="L72">        explosionSprites[2] = this.loadImage(&quot;src/main/resources/explosion/vertical.png&quot;);</span>
+
+        //Create ui, map and game manager
+<span class="fc" id="L75">        this.ui = new UI(lives);</span>
+<span class="fc" id="L76">        this.ui.loadImages(this);</span>
+
+<span class="fc" id="L78">        this.map = new Map(wall, brokenWall, goalImage, redEnemyAnimations, yellowEnemyAnimations, playerAnimations);</span>
+
+<span class="fc" id="L80">        this.gameManager = new GameManager(map, ui, levels);</span>
+<span class="fc" id="L81">        this.gameManager.setBombAnimation(bombAnimation);</span>
+<span class="fc" id="L82">        this.gameManager.setExplosionSprites(explosionSprites);        </span>
+<span class="fc" id="L83">    }</span>
+    
+    //Loading the 2D array for character animations
+    private PImage[][] loadCharacterAnimations(String characterName){
+        String characterType;
+<span class="fc" id="L88">        PImage[][] tempAnimations = new PImage[4][4];</span>
+
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if(characterName == &quot;yellow_enemy&quot;){</span>
+<span class="fc" id="L91">            characterType = &quot;yellow&quot;;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        }else if(characterName == &quot;red_enemy&quot;){</span>
+<span class="fc" id="L93">            characterType = &quot;red&quot;;</span>
+        }else{
+<span class="fc" id="L95">            characterType = &quot;player&quot;;</span>
+        }
+
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for(int i = 0; i &lt; 4; i++){</span>
+<span class="fc" id="L99">            tempAnimations[0][i] = this.loadImage(&quot;src/main/resources/&quot; + characterName + &quot;/&quot; + characterType + &quot;_left&quot; + (i+1) + &quot;.png&quot;);</span>
+        }
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for(int i = 0; i &lt; 4; i++){</span>
+<span class="fc" id="L103">            tempAnimations[1][i] = this.loadImage(&quot;src/main/resources/&quot; + characterName + &quot;/&quot; + characterType + &quot;_up&quot; + (i+1) + &quot;.png&quot;);        </span>
+        }
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for(int i = 0; i &lt; 4; i++){</span>
+<span class="fc" id="L107">            tempAnimations[2][i] = this.loadImage(&quot;src/main/resources/&quot; + characterName + &quot;/&quot; + characterType + &quot;_right&quot; + (i+1) + &quot;.png&quot;);</span>
+        }
+
+
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if(characterName == &quot;player&quot;){</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            for(int i = 0; i &lt; 4; i++){</span>
+<span class="fc" id="L113">            tempAnimations[3][i] = this.loadImage(&quot;src/main/resources/&quot; + characterName + &quot;/&quot; + characterType + (i+1) + &quot;.png&quot;);        </span>
+            }
+
+        }else{
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            for(int i = 0; i &lt; 4; i++){</span>
+<span class="fc" id="L118">                tempAnimations[3][i] = this.loadImage(&quot;src/main/resources/&quot; + characterName + &quot;/&quot; + characterType + &quot;_down&quot; + (i+1) + &quot;.png&quot;);        </span>
+            }
+        }
+
+<span class="fc" id="L122">        return tempAnimations;</span>
+    }
+
+    public void draw() {
+        //Ticks the game manager which ticks all the other objects, and draws all the objects 
+<span class="fc" id="L127">        background(238, 129, 0);</span>
+<span class="fc" id="L128">        fill(75, 105, 45);</span>
+<span class="fc" id="L129">        rect(0, 64, 480, 416);</span>
+
+<span class="fc" id="L131">        playerDirection = keyCode;</span>
+<span class="fc" id="L132">        this.gameManager.tick(playerDirection, keyPressed);</span>
+
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for(BrokenWall brokenWall : this.map.getBrokenWallList()){</span>
+<span class="fc" id="L135">            brokenWall.display(this);</span>
+<span class="fc" id="L136">        }</span>
+
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        for(Wall wall : this.map.getWallList()){</span>
+<span class="fc" id="L139">            wall.display(this);</span>
+<span class="fc" id="L140">        }</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        for(Bomb bomb : this.gameManager.getBombList()){</span>
+<span class="fc" id="L143">            bomb.display(this);</span>
+<span class="fc" id="L144">        }</span>
+
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for(RedEnemy redEnemy: this.map.getRedEnemies()){</span>
+<span class="fc" id="L147">            redEnemy.display(this);</span>
+<span class="fc" id="L148">        }</span>
+
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for(YellowEnemy yellowEnemy: this.map.getYellowEnemies()){</span>
+<span class="fc" id="L151">            yellowEnemy.display(this);</span>
+<span class="fc" id="L152">        }</span>
+
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for(Explosion explosion : this.gameManager.getExplosions()){</span>
+<span class="fc" id="L155">            explosion.display(this);</span>
+<span class="fc" id="L156">        }</span>
+        
+<span class="fc" id="L158">        this.map.getGoal().display(this);</span>
+<span class="fc" id="L159">        this.map.getBomberMan().display(this);</span>
+
+<span class="fc" id="L161">        textAlign(CENTER, TOP);</span>
+<span class="fc" id="L162">        this.gameManager.getUI().display(this);</span>
+<span class="fc" id="L163">    }</span>
+    
+    public UI getUI(){
+<span class="fc" id="L166">        return ui;</span>
+    }
+
+    public static void main(String[] args) {
+<span class="nc" id="L170">        PApplet.main(&quot;demolition.App&quot;);</span>
+<span class="nc" id="L171">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

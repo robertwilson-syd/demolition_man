@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Map.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Demolition</a> &gt; <a href="index.source.html" class="el_package">demolition</a> &gt; <span class="el_source">Map.java</span></div><h1>Map.java</h1><pre class="source lang-java linenums">package demolition;
+
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Arrays;
+
+public class Map{
+
+<span class="fc" id="L15">	private int offset = 64;</span>
+
+	private Goal goal;
+
+	private BomberMan bomberMan;
+
+<span class="fc" id="L21">	private char[][] mapList = new char[13][15];</span>
+
+<span class="fc" id="L23">	private List&lt;BrokenWall&gt; brokenWalls = new ArrayList&lt;BrokenWall&gt;();</span>
+<span class="fc" id="L24">	private List&lt;Wall&gt; walls = new ArrayList&lt;Wall&gt;();</span>
+<span class="fc" id="L25">	private List&lt;RedEnemy&gt; redEnemies = new ArrayList&lt;RedEnemy&gt;();</span>
+<span class="fc" id="L26">	private List&lt;YellowEnemy&gt; yellowEnemies = new ArrayList&lt;YellowEnemy&gt;();</span>
+
+	private PImage wall;
+	private PImage brokenWall;
+	private PImage goalImage;
+
+	private PImage[][] redEnemyAnimations;
+	private PImage[][] yellowEnemyAnimations;
+    public PImage[][] playerAnimations;
+
+<span class="fc" id="L36">	public Map(PImage wall, PImage brokenWall, PImage goalImage, PImage[][] redEnemyAnimations, PImage[][] yellowEnemyAnimations, PImage[][] playerAnimations){</span>
+<span class="fc" id="L37">		this.wall = wall;</span>
+<span class="fc" id="L38">		this.brokenWall = brokenWall;</span>
+<span class="fc" id="L39">		this.goalImage = goalImage;</span>
+<span class="fc" id="L40">		this.redEnemyAnimations = redEnemyAnimations;</span>
+<span class="fc" id="L41">		this.yellowEnemyAnimations = yellowEnemyAnimations;</span>
+<span class="fc" id="L42">		this.playerAnimations = playerAnimations;</span>
+<span class="fc" id="L43">	}</span>
+
+	public void loadMap(String path){
+		//Loads tiles from a text map, and copies each character into a 2D array stored within the class.
+<span class="fc" id="L47">		yellowEnemies.clear();</span>
+<span class="fc" id="L48">		redEnemies.clear();</span>
+<span class="fc" id="L49">		brokenWalls.clear();</span>
+<span class="fc" id="L50">		walls.clear();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">		for(int i = 0; i &lt; 13; i++){</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">			for(int j = 0; j &lt; 15; j++){</span>
+<span class="fc" id="L53">				mapList[i][j] = '\0';</span>
+			}
+		}
+
+<span class="fc" id="L57">		int counterX = 0;</span>
+<span class="fc" id="L58">		int counterY = offset;</span>
+		File file;
+		String line;
+		Scanner scan;
+
+		try{
+<span class="fc" id="L64">			file = new File(path);</span>
+<span class="nc" id="L65">		}catch(java.lang.NullPointerException e){</span>
+<span class="nc" id="L66">			return;</span>
+<span class="fc" id="L67">		}</span>
+		try{
+<span class="fc" id="L69">			scan = new Scanner(file);</span>
+<span class="nc" id="L70">		}catch(FileNotFoundException e){</span>
+<span class="nc" id="L71">			System.out.println(&quot;ERROR&quot;);</span>
+<span class="nc" id="L72">			return;</span>
+<span class="fc" id="L73">		}</span>
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		while(scan.hasNextLine()){</span>
+<span class="fc" id="L76">			line = scan.nextLine();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			for(int i = 0; i &lt; line.length(); i++){</span>
+<span class="fc" id="L78">				char c = line.charAt(i);</span>
+<span class="pc bpc" id="L79" title="1 of 8 branches missed.">				switch(c) {</span>
+					case 'B':
+<span class="fc" id="L81">						BrokenWall tempBrokenWall = new BrokenWall(counterX, counterY, brokenWall);</span>
+<span class="fc" id="L82">						brokenWalls.add(tempBrokenWall); </span>
+<span class="fc" id="L83">						mapList[(counterY -64) / 32][counterX/32] = 'B';</span>
+<span class="fc" id="L84">						break;</span>
+					case 'W':
+<span class="fc" id="L86">						Wall tempWall = new Wall(counterX, counterY, wall);</span>
+<span class="fc" id="L87">						walls.add(tempWall); </span>
+<span class="fc" id="L88">						mapList[(counterY -64)/32][counterX/32] = 'W';</span>
+<span class="fc" id="L89">						break;</span>
+					case 'G':
+<span class="fc" id="L91">						goal = new Goal(counterX, counterY, goalImage);</span>
+<span class="fc" id="L92">						mapList[(counterY -64)/32][counterX/32] = 'G';</span>
+<span class="fc" id="L93">						break;</span>
+					case 'P':
+					//Why is this different?
+<span class="fc" id="L96">						bomberMan = new BomberMan(counterX, counterY, playerAnimations);</span>
+<span class="fc" id="L97">						mapList[(counterY -64)/32][counterX/32] = 'E';</span>
+<span class="fc" id="L98">						break;</span>
+					case 'R':
+<span class="fc" id="L100">						RedEnemy redEnemy = new RedEnemy(counterX, counterY, redEnemyAnimations);</span>
+<span class="fc" id="L101">						redEnemies.add(redEnemy);</span>
+<span class="fc" id="L102">						mapList[(counterY -64)/32][counterX/32] = 'E';</span>
+<span class="fc" id="L103">						break;</span>
+					case 'Y':
+<span class="fc" id="L105">						YellowEnemy yellowEnemy = new YellowEnemy(counterX, counterY, yellowEnemyAnimations);</span>
+<span class="fc" id="L106">						yellowEnemies.add(yellowEnemy);</span>
+<span class="fc" id="L107">						mapList[(counterY -64)/32][counterX/32] = 'E';</span>
+<span class="fc" id="L108">						break;</span>
+					case ' ':
+<span class="fc" id="L110">						mapList[(counterY -64)/32][counterX/32] = 'E';</span>
+						break;
+				}
+<span class="fc" id="L113">				counterX += 32;</span>
+
+			}
+<span class="fc" id="L116">			counterX = 0;</span>
+<span class="fc" id="L117">			counterY += 32;</span>
+		}
+<span class="fc" id="L119">	}</span>
+
+	public List&lt;BrokenWall&gt; getBrokenWallList(){
+<span class="fc" id="L122">		return brokenWalls;</span>
+	}
+
+	public List&lt;Wall&gt; getWallList(){
+<span class="fc" id="L126">		return walls;</span>
+	}
+	
+	public Goal getGoal(){
+<span class="fc" id="L130">		return goal;</span>
+	}
+
+	public List&lt;RedEnemy&gt; getRedEnemies(){
+<span class="fc" id="L134">		return redEnemies;</span>
+	}
+
+	public List&lt;YellowEnemy&gt; getYellowEnemies(){
+<span class="fc" id="L138">		return yellowEnemies;</span>
+	}
+
+	public boolean isDestinationPassable(int x, int y){
+<span class="pc bpc" id="L142" title="1 of 4 branches missed.">		if(mapList[(y-64)/32][x/32] == 'E' || mapList[(y-64)/32][x/32] == 'G'){</span>
+<span class="fc" id="L143">			return true;</span>
+		}else{
+<span class="fc" id="L145">			return false;</span>
+		}
+	}
+
+	public boolean isDestinationBrokenWall(int x, int y){
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		if(mapList[(y-64)/32][x/32] == 'B'){</span>
+<span class="fc" id="L151">			return true;</span>
+		}else{
+<span class="fc" id="L153">			return false;</span>
+		}
+	}
+
+	public void breakWall(int x, int y){
+<span class="fc" id="L158">		mapList[(y-64)/32][x/32] = 'E';</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		for(Iterator&lt;BrokenWall&gt; it = brokenWalls.iterator(); it.hasNext();){</span>
+<span class="fc" id="L160">			BrokenWall brokenWall = it.next();</span>
+<span class="fc bfc" id="L161" title="All 4 branches covered.">			if(brokenWall.getX() == x &amp;&amp; brokenWall.getY() == y){</span>
+<span class="fc" id="L162">				it.remove();</span>
+			}
+<span class="fc" id="L164">		}</span>
+<span class="fc" id="L165">	}</span>
+
+	public BomberMan getBomberMan(){
+<span class="fc" id="L168">		return bomberMan;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
